@@ -1,4 +1,33 @@
 GitHub2NNTP
 ===========
 
-This is one-way gateway between GitHub and a NNTP server like leafnode.
+This is one-way gateway between GitHub and a local NNTP server like leafnode.
+
+Why I write this?
+-----------------
+
+GitHub have a API for access logs of public information but it not provide a
+RSS/Atom feed for this information (except if you have a account, watch some
+repos and use the web interface).
+
+I can't find a nice script to produce a RSS/Atom feed for issues and since I
+like NNTP I write this.
+
+Quick start
+-----------
+
+The basic configuration can placed in ``~/.github2nntp.conf`` where each line
+must be of the form ::
+
+    newsgroup.name owner repo
+
+To fetch the issues, running ::
+
+    $ github2nntp
+
+You might add it to your cron.
+
+Some information for the next running are need and it will be save at
+``~/.github2nntp.status``. If having troubles you can try remove this file.
+
+A log of the last running are keeped in ``~/.github2nntp.log``.
