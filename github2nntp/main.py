@@ -40,6 +40,8 @@ def check_time(token_enable=False):
     This function check the number of request per minute and wait some time if
     need.
     """
+    global NUMBER_REQUEST, AU_MAX_REQUEST, OT_MAX_REQUEST, TIME_LAST_REQUEST
+
     now = time.time()
     if(now - TIME_LAST_REQUEST > 60):
         pass
@@ -66,11 +68,12 @@ def write2status(f, news, owner, repo):
     :param repo: the name of the repo
     :type repo: str
     """
-    f.write('{}\t{}\t{}\t{:%Y-%m-%dT%H:%M:%S}Z'.format(news,
+    f.write('{}\t{}\t{}\t{:%Y-%m-%dT%H:%M:%S}Z\n'.format(news,
             owner, repo, datetime.datetime.utcnow()))
 
 def run(fconf='~/.github2nntp.conf', fstatus='~/.github2nntp.status',
         ftoken='~/.github2nntp.token'):
+    global NUMBER_REQUEST, AU_MAX_REQUEST, OT_MAX_REQUEST, TIME_LAST_REQUEST
 
     news = []
     olds = []
@@ -126,7 +129,7 @@ def run(fconf='~/.github2nntp.conf', fstatus='~/.github2nntp.status',
                     l['time'])
             NUMBER_REQUEST += 1
 
-            write2status(l['newsgroup'], l['owner'], l['repo'])
+            write2status(f, l['newsgroup'], l['owner'], l['repo'])
 
         # New repos
         for l in news:
@@ -146,7 +149,7 @@ def run(fconf='~/.github2nntp.conf', fstatus='~/.github2nntp.status',
                     None)
             NUMBER_REQUEST += 1
 
-            write2status(l['newsgroup'], l['owner'], l['repo'])
+            write2status(f, l['newsgroup'], l['owner'], l['repo'])
 
 def main():
     """GitHub2NNTP"""

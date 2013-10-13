@@ -68,6 +68,11 @@ def conv(t):
 def write_new(n, d):
     """
     Process dict to news.
+
+    :param n: newsgroup name
+    :type: str
+    :param d: info from GitHub
+    :type d: dict
     """
     import email.utils
 

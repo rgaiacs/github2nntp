@@ -39,7 +39,7 @@ def conf_parse_line(l):
     :param l: line
     :type l: str
     """
-    ll = l.split('\t')
+    ll = l.rstrip('\n').split('\t')
     return {'newsgroup': ll[0],
             'owner': ll[1],
             'repo': ll[2]}
@@ -62,7 +62,7 @@ def status_parse_line(l):
     :param l: line
     :type l: str
     """
-    ll = l.split('\t')
+    ll = l.rstrip('\n').split('\t')
     return {'newsgroup': ll[0],
             'owner': ll[1],
             'repo': ll[2],

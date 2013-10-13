@@ -67,26 +67,33 @@ def conv(t):
 
     return json.loads(t)
 
-def write_new(n, t, d):
+def write_new(n, d):
     """
     Process dict to news.
+
+    :param n: newsgroup name
+    :type: str
+    :param d: info from GitHub
+    :type d: dict
     """
     import email.utils
 
     return 'Date: {}\nFrom: {}\nMessage-ID: {}\nNewsgroups: {}\n' \
-            'Path: github2nntp.local\nSubject: {}\n\n{}\nLink: {}\n'.format(
+            'Path: github2nntp.local\nSubject: Comment #{}\n\n{}\nLink: {}\n'.format(
             d['updated_at'],
             d['user']['login'],
             email.utils.make_msgid(),
             n,
-            t,
+            d['id'],
             d['body'],
             d['html_url'])
 
-def send2nntp(g, o, r, n, t, s):
+def send2nntp(token, g, o, r, s):
     """
     Send issues to nntp server.
 
+    :param token: token
+    :type token: str
     :param g: newsgroup
     :type g: str
     :param o: owner
@@ -98,10 +105,10 @@ def send2nntp(g, o, r, n, t, s):
     """
     import github2nntp.nntp as nntp
 
-    a = retrieve(o, r, n, s)
-    for i in conv(a):
-        logging.info('Processing comment {} of issue {}'.format(i['id'], n))
-        nntp.post(g, write_new(g, t, i))
+    t = retrieve(token, o, r, s)
+    for i in conv(t):
+        logging.info('Processing comment {}'.format(i['id']))
+        nntp.post(g, write_new(g, i))
 
 if __name__ == "__main__":
     import argparse
