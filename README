@@ -19,13 +19,19 @@ Quick start
 The basic configuration can placed in ``~/.github2nntp.conf`` where each line
 must be of the form ::
 
-    newsgroup.name owner repo
+    newsgroup.name	owner	repo
+
+Note that the fields are separate by tab.
+
+If you have a GitHub account you can use your token
+(https://github.com/blog/1509-personal-api-tokens) to increase the number of
+request per minute. For it, save the token in ``~/.github2nntp.token``.
 
 To fetch the issues, running ::
 
     $ github2nntp
 
-You might add it to your cron.
+You might like add it into your cron job list.
 
 Some information for the next running are need and it will be save at
 ``~/.github2nntp.status``. If having troubles you can try remove this file.

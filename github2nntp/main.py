@@ -15,21 +15,85 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import time
 import datetime
 import logging
 import github2nntp.conf as conf
 import github2nntp.issues as issues
+import github2nntp.comments as comments
 
-def run(fconf='~/.github2nntp.conf', fstatus='~/.github2nntp.status'):
+"""
+GitHub API have a rate limit. For requests using Basic Authentication, OAuth, or
+client ID and secret, you can make up to 20 requests per minute. For
+unauthenticated requests, the rate limit allows you to make up to 5 requests per
+minute.
+
+From: http://developer.github.com/v3/search/#rate-limit
+"""
+NUMBER_REQUEST =  0  # The number of request in the last minute.
+AU_MAX_REQUEST = 20  # The max number of request per minute when authenticated
+OT_MAX_REQUEST =  5  # The max number of request per minute when unauthenticated
+TIME_LAST_REQUEST = time.time()
+
+def check_time(token_enable=False):
+    """
+    This function check the number of request per minute and wait some time if
+    need.
+    """
+    now = time.time()
+    if(now - TIME_LAST_REQUEST > 60):
+        pass
+    else:
+        if(token_enable and NUMBER_REQUEST < AU_MAX_REQUEST):
+            pass
+        elif(not token_enable and NUMBER_REQUEST < OT_MAX_REQUEST):
+            pass
+        else:
+            logging.info('Go to sleep for {} seconds.'.format(now -
+                TIME_LAST_REQUEST))
+            time.sleep(int(now - TIME_LAST_REQUEST) + 1)
+
+def write2status(f, news, owner, repo):
+    """
+    Write the status information.
+
+    :param f: the file
+    :type f: _io.TextIOWrapper
+    :param news: the newsgroup name
+    :typee news: str
+    :param owner: the owner of the repo
+    :type owner: str
+    :param repo: the name of the repo
+    :type repo: str
+    """
+    f.write('{}\t{}\t{}\t{:%Y-%m-%dT%H:%M:%S}Z'.format(news,
+            owner, repo, datetime.datetime.utcnow()))
+
+def run(fconf='~/.github2nntp.conf', fstatus='~/.github2nntp.status',
+        ftoken='~/.github2nntp.token'):
+
     news = []
     olds = []
     status = []
+
+    # Try load token file
+    try:
+        with open(os.path.expanduser(ftoken), 'r') as f:
+            token = f.readline().rstrip('\n')
+    except FileNotFoundError as err:
+        logging.info('{} not found. Ignoring.'.format(ftoken))
+        token = None
+
+    # Try load the status file
     try:
         with open(os.path.expanduser(fstatus), 'r') as f:
             for l in f.readlines():
                 status.append(conf.status_parse_line(l))
     except FileNotFoundError as err:
         logging.info('{} not found. Ignoring.'.format(fstatus))
+
+
+    # Load the config file
     with open(os.path.expanduser(fconf), 'r') as f:
         for l in f.readlines():
             tmp = conf.conf_parse_line(l)
@@ -41,25 +105,48 @@ def run(fconf='~/.github2nntp.conf', fstatus='~/.github2nntp.status'):
                     break
             else:
                 news.append(tmp)
+
+    # Write information new information in the status files
     with open(os.path.expanduser(fstatus), 'w') as f:
+        # Old repos
         for l in olds:
-            issues.send2nntp(l['newsgroup'],
+            check_time()
+            issues.send2nntp(token,
+                    l['newsgroup'],
                     l['owner'],
                     l['repo'],
                     l['time'])
-            f.write('{} {} {} {:%Y-%m-%dT%H:%M:%S}Z'.format(l['newsgroup'],
+            NUMBER_REQUEST += 1
+
+            check_time()
+            comments.send2nntp(token,
+                    l['newsgroup'],
                     l['owner'],
                     l['repo'],
-                    datetime.datetime.utcnow()))
+                    l['time'])
+            NUMBER_REQUEST += 1
+
+            write2status(l['newsgroup'], l['owner'], l['repo'])
+
+        # New repos
         for l in news:
-            issues.send2nntp(l['newsgroup'],
+            check_time()
+            issues.send2nntp(token,
+                    l['newsgroup'],
                     l['owner'],
                     l['repo'],
                     None)
-            f.write('{} {} {} {:%Y-%m-%dT%H:%M:%S}Z'.format(l['newsgroup'],
+            NUMBER_REQUEST += 1
+
+            check_time()
+            comments.send2nntp(token,
+                    l['newsgroup'],
                     l['owner'],
                     l['repo'],
-                    datetime.datetime.utcnow()))
+                    None)
+            NUMBER_REQUEST += 1
+
+            write2status(l['newsgroup'], l['owner'], l['repo'])
 
 def main():
     """GitHub2NNTP"""
@@ -75,11 +162,14 @@ def main():
     parser.add_argument('-l', '--log', type=str,
             default=os.path.expanduser('~/.github2nntp.log'),
             help='log file')
+    parser.add_argument('-t', '--token', type=str,
+            default=os.path.expanduser('~/.github2nntp.token'),
+            help='token file')
 
     args = parser.parse_args()
 
     logging.basicConfig(filename=args.log, filemode='w',  level=logging.INFO)
 
     logging.info('Started')
-    run(args.conf, args.status)
+    run(args.conf, args.status, args.token)
     logging.info('Finished')

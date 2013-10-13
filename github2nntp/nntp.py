@@ -34,12 +34,12 @@ def post(n, m):
     try:
         can_post = s.group(n)
     except nntplib.NNTPError as err:
-        logging.error('Can\'t select news group.\n\t{0}'.format(err))
+        logging.error('Can\'t select news group named {}.\n\t{}'.format(n, err))
         can_post = False
     if can_post != False:
         try:
             s.post(io.BytesIO(m.encode()))
             logging.info('Message posted.')
         except nntplib.NNTPError as err:
-            logging.error('Message not posted.\n\t{0}'.format(err))
+            logging.error('Message not posted.\n\t{}\n\t{}'.format(err, m))
     s.quit()

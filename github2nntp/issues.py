@@ -17,10 +17,12 @@
 import sys
 import logging
 
-def retrieve(o, r, s):
+def retrieve(t, o, r, s):
     """
     Retrieve issues.
 
+    :param t: token
+    :type t: str
     :param o: owner
     :type o: str
     :param r: repo
@@ -31,14 +33,28 @@ def retrieve(o, r, s):
     :rtype: str
     """
     import urllib.request
+    import urllib.error
+
+    # Authentication
+    passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+    passman.add_password(None, 'https://api.github.com', t, 'x-oauth-basic')
+    authhandler = urllib.request.HTTPBasicAuthHandler(passman)
+    opener = urllib.request.build_opener(authhandler)
+    urllib.request.install_opener(opener)
+
+    # Set url
     if s:
         url = 'https://api.github.com/repos/{}/{}/issues?since={}'.format(o, r, s)
-        logging.info('Downloading {}'.format(url))
-        response = urllib.request.urlopen(url)
     else:
         url = 'https://api.github.com/repos/{}/{}/issues'.format(o, r)
-        logging.info('Downloading {}'.format(url))
+    logging.info('Downloading {}'.format(url))
+
+    # Request
+    try:
         response = urllib.request.urlopen(url)
+    except urllib.error.HTTPError as err:
+        logging.critical(err)
+        sys.exit()
     return response.read().decode()
 
 def conv(t):
@@ -65,10 +81,12 @@ def write_new(n, d):
             d['body'],
             d['html_url'])
 
-def send2nntp(g, o, r, s):
+def send2nntp(token, g, o, r, s):
     """
     Send issues to nntp server.
 
+    :param token: token
+    :type token: str
     :param g: newsgroup
     :type g: str
     :param o: owner
@@ -81,16 +99,13 @@ def send2nntp(g, o, r, s):
     import github2nntp.nntp as nntp
     import github2nntp.comments as comments
 
-    r = retrieve(o, r, s)
-    for i in conv(r):
+    t = retrieve(token, o, r, s)
+    for i in conv(t):
         logging.info('Processing issue {}'.format(i['number']))
         if i['created_at'] == i['updated_at']:
             # This means that the issue are new.
             logging.info('Look like issue {} is new'.format(i['number']))
             nntp.post(g, write_new(g, i))
-        # Comments of issue.
-        logging.info('Looking for comments in issue {}'.format(i['number']))
-        comments.send2nntp(g, o, r, i['number'], i['title'], s)
 
 if __name__ == "__main__":
     import argparse

@@ -15,33 +15,48 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import urllib.request
+import logging
 
-def retrieve(o, r, n, s):
+def retrieve(t, o, r, s):
     """
-    Retrieve comments from issue.
+    Retrieve comments from repository.
 
+    :param t: token
+    :type t: str
     :param o: owner
     :type o: str
     :param r: repo
     :type r: str
-    :param n: number of issue
-    :type n: str
     :param s: since
     :type s: str
     :return: the JSON return from the server
     :rtype: str
     """
+    import urllib.request
+    import urllib.error
+
+    # Authentication
+    passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+    passman.add_password(None, 'https://api.github.com', t, 'x-oauth-basic')
+    authhandler = urllib.request.HTTPBasicAuthHandler(passman)
+    opener = urllib.request.build_opener(authhandler)
+    urllib.request.install_opener(opener)
+
+    # Set url
     if s:
-        url = 'https://api.github.com/repos/{}/{}/issues/{}/comments?since={}'.format(o,
-                r, n, s)
-        print('Downloading {}'.format(url), file=sys.stderr)
-        response = urllib.request.urlopen(url)
+        url = 'https://api.github.com/repos/{}/{}/issues/comments?since={}'.format(o,
+                r, s)
     else:
-        url = 'https://api.github.com/repos/{}/{}/issues/{}/comments'.format(o,
-                r, n)
-        print('Downloading {}'.format(url), file=sys.stderr)
+        url = 'https://api.github.com/repos/{}/{}/issues/comments'.format(o,
+                r)
+    logging.info('Downloading {}'.format(url))
+
+    # Request
+    try:
         response = urllib.request.urlopen(url)
+    except urllib.error.HTTPError as err:
+        logging.critical(err)
+        sys.exit()
     return response.read().decode()
 
 def conv(t):
@@ -83,8 +98,8 @@ def send2nntp(g, o, r, n, t, s):
     """
     import github2nntp.nntp as nntp
 
-    r = retrieve(o, r, n, s)
-    for i in conv(r):
+    a = retrieve(o, r, n, s)
+    for i in conv(a):
         logging.info('Processing comment {} of issue {}'.format(i['id'], n))
         nntp.post(g, write_new(g, t, i))
 

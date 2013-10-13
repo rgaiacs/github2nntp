@@ -22,11 +22,14 @@ Parse Configuration and Status file
 Configuration file
 ------------------
 
-It store the list of repositories to fetch and the newsgroup to feed.
+It store the GitHub token to be used and the list of repositories to fetch the
+newsgroup to feed.
 
-The file has the following structure::
+The line has the following structure::
 
-    newsgroup.name owner repo
+    newsgroup.name	owner	repo
+
+Note that the fields are separate by tabs.
 """
 
 def conf_parse_line(l):
@@ -36,7 +39,7 @@ def conf_parse_line(l):
     :param l: line
     :type l: str
     """
-    ll = l.split()
+    ll = l.split('\t')
     return {'newsgroup': ll[0],
             'owner': ll[1],
             'repo': ll[2]}
@@ -59,7 +62,7 @@ def status_parse_line(l):
     :param l: line
     :type l: str
     """
-    ll = l.split()
+    ll = l.split('\t')
     return {'newsgroup': ll[0],
             'owner': ll[1],
             'repo': ll[2],
