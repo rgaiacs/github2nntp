@@ -73,11 +73,20 @@ def write2status(f, news, owner, repo):
 
 def run(fconf='~/.github2nntp.conf', fstatus='~/.github2nntp.status',
         ftoken='~/.github2nntp.token'):
+    import urllib.request
+
     global NUMBER_REQUEST, AU_MAX_REQUEST, OT_MAX_REQUEST, TIME_LAST_REQUEST
 
     news = []
     olds = []
     status = []
+
+    # Check for internet connection
+    try:
+        urllib.request.urlopen('http://www.google.com')
+    except Exception:
+        logging.info('No internet connection. Aborting.')
+        return 1
 
     # Try load token file
     try:
